@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ChestVision AI - Medical AI Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* FastAPI Layout Structure */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #090d16;
+            color: #f8fafc;
+            display: flex;
+            min-height: 100vh;
+        }
+        .app-sidebar {
+            width: 280px;
+            background-color: #0f172a;
+            border-right: 1px solid #1e293b;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .app-main {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem 3rem 4rem 3rem;
+            max-width: 1400px;
+        }
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #94a3b8;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            background: #1e293b;
+            color: #38bdf8;
+        }
+        .nav-link.active {
+            background: #0284c7;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .status-badge {
+            margin-top: auto;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            padding: 0.65rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+        .card-container {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-file-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #f8fafc;
+            margin-top: 0.5rem;
+        }
+        .btn-submit {
+            background-color: #0284c7;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        .btn-submit:hover {
+            background-color: #0369a1;
+        }
+        .btn-secondary {
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+        .img-fluid {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        /* In-Button Loading Spinner */
+        .btn-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            animation: btn-spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes btn-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <aside class="app-sidebar">
+        <div class="sidebar-brand">🫁 ChestVision AI</div>
+        <div class="sidebar-desc">Explainable AI for Chest X-ray Analysis</div>
+        <hr style="border: 0; border-top: 1px solid #1e293b; margin: 1rem 0;">
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">🏠 Dashboard</a></li>
+            <li><a href="/analyze" class="nav-link {% if active_page == 'analyze' %}active{% endif %}">🔬 Analyze X-ray</a></li>
+            <li><a href="/compare" class="nav-link {% if active_page == 'compare' %}active{% endif %}">⚖️ Compare X-rays</a></li>
+            <li><a href="/explainability" class="nav-link {% if active_page == 'explainability' %}active{% endif %}">🧠 Explainability</a></li>
+            <li><a href="/model-info" class="nav-link {% if active_page == 'model_info' %}active{% endif %}">📊 Model Information</a></li>
+            <li><a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">ℹ️ About</a></li>
+        </ul>
+        {% if models_loaded %}
+        <div class="status-badge">🟢 Deep Learning Pipeline Online</div>
+        {% else %}
+        <div class="status-badge error">🔴 Model Loading Failed</div>
+        {% endif %}
+        <div style="font-size: 0.75rem; color: #64748b; text-align: center; margin-top: 1.5rem;">
+            <b>ChestVision AI v1.0</b><br>FastAPI & Keras Backend<br><i>Research Prototype</i>
+        </div>
+    </aside>
+
+    <main class="app-main">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

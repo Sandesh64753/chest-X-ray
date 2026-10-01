@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}ChestVision AI - Single X-ray Analysis{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 0.25rem;">🔬 Single X-ray Analysis</h2>
+<p style="color: #94a3b8; margin-bottom: 2rem;">Upload a Chest X-ray to perform multi-class classification, U-Net lung segmentation, and Grad-CAM explainability.</p>
+
+{% if not models_loaded %}
+<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 10px; padding: 1rem; color: #fca5a5; margin-bottom: 2rem;">
+    ⚠️ Model loading failed: {{ model_error }}
+</div>
+{% else %}
+
+<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; margin-bottom: 2rem;">
+    <!-- Left Column: Upload Form -->
+    <div class="card-container">
+        <h3 style="margin-top: 0; color: #38bdf8;">Upload Image</h3>
+        <form id="analyzeForm" action="/analyze" method="post" enctype="multipart/form-data">
+            <label style="font-size: 0.9rem; color: #cbd5e1;">Select Chest X-ray Image (PNG/JPG/JPEG):</label>
+            <input type="file" name="file" id="analyzeFileInput" accept="image/*" class="form-file-input">
+            
+            <!-- Live Client-Side Image Preview with Cancel Option -->
+            <div id="previewContainer" style="display: none; margin-top: 1rem; text-align: center;">
+                <div class="image-card-header">Uploaded Image Preview</div>
+                <img id="uploadPreview" class="img-fluid" style="max-height: 220px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 0.75rem;">
+                <div>
+                    <button type="button" id="cancelUploadBtn" class="btn-secondary" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4); font-size: 0.85rem; padding: 0.4rem 0.88rem;">
+                        ❌ Cancel / Remove Image
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin: 1.25rem 0 0.5rem 0; font-weight: 600; color: #94a3b8;">Or choose a demo sample:</div>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+                <button type="submit" name="sample" value="sample_1" class="btn-secondary">🖼️ Demo Sample 1</button>
+                <button type="submit" name="sample" value="sample_2" class="btn-secondary">🖼️ Demo Sample 2</button>
+            </div>
+
+            <button type="submit" class="btn-submit">🚀 Run Analysis</button>
+        </form>
+    </div>
+
+    <!-- Right Column: Analysis Pipeline Info -->
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem;">
+        <h3 style="margin-top: 0; color: #38bdf8;">Analysis Pipeline</h3>
+        
+        <div style="color: #10b981; font-weight: 600; margin-bottom: 0.3rem;">✓ DenseNet121 Classification</div>
+        <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">Predicts probabilities for COVID, Lung Opacity, Normal, and Viral Pneumonia.</div>
+        
+        <div style="color: #10b981; font-weight: 600; margin-bottom: 0.3rem;">✓ U-Net Lung Segmentation</div>
+        <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">Generates a pixel-level lung mask and calculates lung mask area coverage %.</div>
+        
+        <div style="color: #10b981; font-weight: 600; margin-bottom: 0.3rem;">✓ Grad-CAM Explainability</div>
+        <div style="font-size: 0.85rem; color: #94a3b8;">Computes visual feature activation maps and spatial region descriptions.</div>
+    </div>
+</div>
+
+{% if results %}
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+<h2>📊 Analysis Dashboard</h2>
+
+<!-- Metric Cards Row -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+    <div class="metric-card">
+        <div class="metric-label">Predicted Class</div>
+        <div class="metric-value" style="color: {{ results.pred_color }};">{{ results.classification.predicted_class }}</div>
+        <div class="metric-sub">Primary Classification</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Confidence</div>
+        <div class="metric-value">{{ "%.1f"|format(results.classification.confidence * 100) }}%</div>
+        <div class="metric-sub">DenseNet Softmax Logit</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Lung Mask Area</div>
+        <div class="metric-value">{{ "%.1f"|format(results.segmentation.mask_area_pct) }}%</div>
+        <div class="metric-sub">Total Image Coverage</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Analysis Status</div>
+        <div class="metric-value" style="color: #10b981;">Complete</div>
+        <div class="metric-sub">All 3 Models Executed</div>
+    </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+
+<!-- Classification Section -->
+<h3>🎯 Classification Result</h3>
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; margin-bottom: 2rem; align-items: center;">
+    <div style="background: #1e293b; border: 1px solid #334155; border-left: 6px solid {{ results.pred_color }}; border-radius: 12px; padding: 1.5rem;">
+        <div style="font-size: 0.9rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Predicted Class</div>
+        <div style="font-size: 2rem; font-weight: 700; color: {{ results.pred_color }}; margin: 0.2rem 0;">{{ results.classification.predicted_class }}</div>
+        <div style="font-size: 1.1rem; color: #cbd5e1;">Confidence: <b>{{ "%.2f"|format(results.classification.confidence * 100) }}%</b></div>
+    </div>
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem;">
+        <canvas id="probChart" height="160"></canvas>
+    </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+
+<!-- Segmentation Section -->
+<h3>🫁 Lung Segmentation</h3>
+<p><b>Lung Mask Area:</b> {{ "%.1f"|format(results.segmentation.mask_area_pct) }}% of total image area (computed from predicted mask pixels > 0.5).</p>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Original X-ray</div>
+        <img src="{{ results.raw_img_b64 }}" class="img-fluid" alt="Original X-ray">
+    </div>
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Predicted Lung Mask</div>
+        <img src="{{ results.mask_b64 }}" class="img-fluid" alt="Lung Mask">
+    </div>
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Segmentation Overlay</div>
+        <img src="{{ results.seg_overlay_b64 }}" class="img-fluid" alt="Segmentation Overlay">
+    </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+
+<!-- Grad-CAM Section -->
+<h3>🧠 Why did the model make this prediction?</h3>
+<p><b>Primary Activation Region:</b> <span style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-weight: 600;">{{ results.gradcam.region_description }}</span></p>
+<p style="font-size: 0.9rem; color: #94a3b8; margin-top: -0.5rem;">The highlighted region represents areas that contributed more strongly to the model's prediction.</p>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Original X-ray</div>
+        <img src="{{ results.raw_img_b64 }}" class="img-fluid" alt="Original X-ray">
+    </div>
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Grad-CAM Heatmap</div>
+        <img src="{{ results.heatmap_b64 }}" class="img-fluid" alt="Grad-CAM Heatmap">
+    </div>
+    <div class="card-container" style="text-align: center;">
+        <div class="image-card-header">Grad-CAM Overlay</div>
+        <img src="{{ results.gcam_overlay_b64 }}" class="img-fluid" alt="Grad-CAM Overlay">
+    </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+
+<!-- Pipeline Grid View -->
+<h3>🔗 Complete X-ray Analysis View</h3>
+<div style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #3b82f6; width: 200px;">
+            <div style="font-weight: 600; color: #38bdf8;">INPUT X-RAY</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">224 × 224 RGB</div>
+        </div>
+        <div style="font-size: 1.5rem; color: #64748b;">➔</div>
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #10b981; width: 220px;">
+            <div style="font-weight: 600; color: #34d399;">CLASSIFICATION</div>
+            <div style="font-size: 0.9rem; font-weight: bold;">{{ results.classification.predicted_class }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">{{ "%.1f"|format(results.classification.confidence * 100) }}% Confidence</div>
+        </div>
+        <div style="font-size: 1.5rem; color: #64748b;">➔</div>
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #a855f7; width: 220px;">
+            <div style="font-weight: 600; color: #c084fc;">SEGMENTATION</div>
+            <div style="font-size: 0.9rem; font-weight: bold;">Lung Mask</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">{{ "%.1f"|format(results.segmentation.mask_area_pct) }}% Area</div>
+        </div>
+        <div style="font-size: 1.5rem; color: #64748b;">➔</div>
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #f59e0b; width: 220px;">
+            <div style="font-weight: 600; color: #fbbf24;">GRAD-CAM EXPLANATION</div>
+            <div style="font-size: 0.8rem; color: #f8fafc;">{{ results.gradcam.region_description }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Download Report Buttons -->
+<h3>📄 Export Analysis Report</h3>
+<div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+    <a href="/export/txt?timestamp={{ results.timestamp }}" target="_blank" class="btn-secondary" style="flex: 1; text-align: center;">📥 Download Summary Report (.TXT)</a>
+    <a href="/export/json?timestamp={{ results.timestamp }}" target="_blank" class="btn-secondary" style="flex: 1; text-align: center;">📥 Download Machine Data (.JSON)</a>
+</div>
+{% endif %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const fileInput = document.getElementById('analyzeFileInput');
+        const cancelBtn = document.getElementById('cancelUploadBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const uploadPreview = document.getElementById('uploadPreview');
+
+        // 1. Client-Side Image Preview Handler
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        uploadPreview.src = evt.target.result;
+                        previewContainer.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewContainer.style.display = 'none';
+                }
+            });
+        }
+
+        // 2. Cancel / Remove Image Handler
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                if (fileInput) fileInput.value = '';
+                uploadPreview.src = '';
+                previewContainer.style.display = 'none';
+            });
+        }
+
+        // 3. In-Button Loading Spinner Trigger on Button Click
+        const analyzeForm = document.getElementById('analyzeForm');
+        if (analyzeForm) {
+            const buttons = analyzeForm.querySelectorAll('button[type="submit"]');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const isPrimary = this.classList.contains('btn-submit');
+                    const text = isPrimary ? 'Analyzing Image...' : 'Loading Sample...';
+                    this.innerHTML = `<span class="btn-spinner"></span> ${text}`;
+                    this.style.opacity = '0.85';
+                    this.style.pointerEvents = 'none';
+                });
+            });
+        }
+
+        // 4. Render Chart.js Probability Chart if Results Exist
+        {% if results %}
+        const ctx = document.getElementById('probChart').getContext('2d');
+        const probData = {{ results.classification.class_probabilities | tojson }};
+        const labels = Object.keys(probData);
+        const dataValues = Object.values(probData).map(v => (v * 100).toFixed(1));
+        const predClass = "{{ results.classification.predicted_class }}";
+        const colorMap = {{ class_colors | tojson }};
+
+        const bgColors = labels.map(label => label === predClass ? (colorMap[label] || '#3b82f6') : '#475569');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Probability (%)',
+                    data: dataValues,
+                    backgroundColor: bgColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: '#334155' }
+                    },
+                    y: {
+                        ticks: { color: '#f8fafc', font: { weight: 'bold' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endif %}
+
+<div class="disclaimer-box">
+    <b>Medical Disclaimer:</b> {{ medical_disclaimer }}
+</div>
+{% endblock %}

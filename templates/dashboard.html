@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}ChestVision AI - Dashboard{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+    <div class="hero-title">Understand Your Chest X-ray with AI</div>
+    <div class="hero-subtitle">
+        Classification, lung segmentation, and visual model explanations integrated in a single research workspace powered by FastAPI and TensorFlow.
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <a href="/analyze" class="btn-submit" style="text-decoration: none; width: auto; display: inline-block;">🚀 Start Analysis</a>
+        <a href="/compare" class="btn-secondary" style="font-size: 1rem; padding: 0.75rem 1.5rem;">⚖️ Compare X-rays</a>
+    </div>
+</div>
+
+<h3 style="color: #f8fafc; margin-bottom: 1rem;">Key Capabilities</h3>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-title">Multi-Class Classification</div>
+        <div class="feature-desc">Classify X-rays into four learned categories: COVID, Lung Opacity, Normal, and Viral Pneumonia using DenseNet121.</div>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🫁</div>
+        <div class="feature-title">Lung Segmentation</div>
+        <div class="feature-desc">Generate pixel-level lung masks using a custom U-Net encoder-decoder architecture with transposed convolutions.</div>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Explainable Grad-CAM</div>
+        <div class="feature-desc">Visualize key feature regions that influenced the model's classification output with spatial region descriptions.</div>
+    </div>
+</div>
+
+<div class="workflow-box">
+    <div style="font-size: 1.05rem; font-weight: 600; color: #f8fafc;">Inference Workflow</div>
+    <div class="workflow-steps">
+        <span class="workflow-step">1. Upload X-ray</span>
+        <span class="workflow-arrow">→</span>
+        <span class="workflow-step">2. Preprocessing</span>
+        <span class="workflow-arrow">→</span>
+        <span class="workflow-step">3. DenseNet121</span>
+        <span class="workflow-arrow">→</span>
+        <span class="workflow-step">4. U-Net Segmentation</span>
+        <span class="workflow-arrow">→</span>
+        <span class="workflow-step">5. Grad-CAM Heatmap</span>
+        <span class="workflow-arrow">→</span>
+        <span class="workflow-step">6. Explainable Dashboard</span>
+    </div>
+</div>
+
+<div class="disclaimer-box">
+    <b>Medical Disclaimer:</b> {{ medical_disclaimer }}
+</div>
+{% endblock %}

@@ -1,0 +1,229 @@
+/* ChestVision AI - Custom Production CSS Styling */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Main App Container Styling */
+.main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+    max-width: 1200px;
+}
+
+/* Custom Header Banner / Hero Section */
+.hero-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0284c7 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    color: #f8fafc;
+}
+
+.hero-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, #ffffff, #e0f2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    max-width: 700px;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+/* Feature Cards Grid */
+.feature-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card:hover {
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+}
+
+.feature-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.feature-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 0.5rem;
+}
+
+.feature-desc {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+/* Workflow Container */
+.workflow-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.workflow-step {
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    padding: 0.65rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #38bdf8;
+}
+
+.workflow-arrow {
+    color: #64748b;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Result Metric Cards */
+.metric-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 0.35rem;
+}
+
+.metric-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.metric-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+/* Custom Image Cards */
+.image-card {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 0.75rem;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.image-card-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background-color: #0f172a;
+    border-right: 1px solid #1e293b;
+}
+
+.sidebar-brand {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-desc {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-footer {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: center;
+    border-top: 1px solid #1e293b;
+    padding-top: 0.75rem;
+}
+
+/* Medical Disclaimer Banner */
+.disclaimer-box {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid #334155;
+    border-left: 4px solid #0284c7;
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Custom Buttons */
+.stButton > button {
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.stButton > button[kind="primary"] {
+    background-color: #0284c7;
+    border-color: #0284c7;
+    color: white;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background-color: #0369a1;
+    border-color: #0369a1;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+}

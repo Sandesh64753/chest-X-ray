@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}ChestVision AI - Model Information{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 0.25rem;">📊 Deep Learning Model Architecture</h2>
+<p style="color: #94a3b8; margin-bottom: 2rem;">Detailed breakdown of the classification, segmentation, and preprocessing pipelines.</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem;">
+        <h3 style="color: #38bdf8; margin-top: 0;">1. Classification Model</h3>
+        <ul style="color: #cbd5e1; line-height: 1.8; padding-left: 1.2rem;">
+            <li><b>Backbone:</b> DenseNet121 pretrained on ImageNet</li>
+            <li><b>Input Shape:</b> 224 × 224 × 3</li>
+            <li><b>Head Layers:</b>
+                <ul>
+                    <li>GlobalAveragePooling2D</li>
+                    <li>BatchNormalization</li>
+                    <li>Dropout (0.4)</li>
+                    <li>Dense (256, ReLU, L2 regularized)</li>
+                    <li>Dropout (0.3)</li>
+                    <li>Dense (4, Softmax)</li>
+                </ul>
+            </li>
+            <li><b>Learned Classes:</b> COVID, Lung_Opacity, Normal, Viral Pneumonia</li>
+        </ul>
+    </div>
+
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem;">
+        <h3 style="color: #38bdf8; margin-top: 0;">2. Segmentation Model</h3>
+        <ul style="color: #cbd5e1; line-height: 1.8; padding-left: 1.2rem;">
+            <li><b>Architecture:</b> Custom U-Net</li>
+            <li><b>Input Shape:</b> 224 × 224 × 3</li>
+            <li><b>Encoder:</b> 4 Convolution Blocks (32 ➔ 64 ➔ 128 ➔ 256 filters)</li>
+            <li><b>Bottleneck:</b> 512 filters</li>
+            <li><b>Decoder:</b> 4 Transposed Conv Blocks + Skip Connections</li>
+            <li><b>Output Layer:</b> Conv2D (1 filter, Sigmoid activation)</li>
+            <li><b>Mask Threshold:</b> 0.5</li>
+        </ul>
+    </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #334155; margin: 2rem 0;">
+
+<h3>⚙️ Model Preprocessing Specifications</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div class="card-container">
+        <h4 style="color: #f8fafc; margin-top: 0;">Classification Preprocessing (DenseNet121):</h4>
+        <ul style="color: #cbd5e1; line-height: 1.6; padding-left: 1.2rem;">
+            <li>Image resized to 224 × 224 RGB.</li>
+            <li>Standard <code>densenet.preprocess_input</code> applied (zero-centering per channel with respect to ImageNet dataset).</li>
+            <li>Expand batch dimension: <code>(1, 224, 224, 3)</code>.</li>
+        </ul>
+    </div>
+    <div class="card-container">
+        <h4 style="color: #f8fafc; margin-top: 0;">Segmentation Preprocessing (U-Net):</h4>
+        <ul style="color: #cbd5e1; line-height: 1.6; padding-left: 1.2rem;">
+            <li>Image resized to 224 × 224 RGB.</li>
+            <li>Cast to float32 and normalized to <code>[0.0, 1.0]</code> range by dividing by 255.0.</li>
+            <li>Binary threshold applied to output logits at <code>0.5</code>.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="disclaimer-box">
+    <b>Medical Disclaimer:</b> {{ medical_disclaimer }}
+</div>
+{% endblock %}

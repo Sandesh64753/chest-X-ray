@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}ChestVision AI - Explainability{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 0.25rem;">🧠 Explainable AI (Grad-CAM Methodology)</h2>
+<p style="color: #94a3b8; margin-bottom: 2rem;">Learn how ChestVision AI extracts visual attention heatmaps from deep convolutional feature layers.</p>
+
+<div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+    <h3 style="color: #38bdf8; margin-top: 0;">What is Grad-CAM?</h3>
+    <p style="color: #cbd5e1; line-height: 1.6;">
+        <b>Gradient-weighted Class Activation Mapping (Grad-CAM)</b> uses the gradients of any target concept 
+        (e.g., predicted class 'COVID') flowing into the final convolutional layer of a deep neural network to produce a 
+        coarse localization map highlighting the important regions in the image for predicting that concept.
+    </p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div class="card-container">
+        <h3 style="color: #38bdf8; margin-top: 0;">⚙️ Grad-CAM Mathematical Flow</h3>
+        <ol style="color: #cbd5e1; line-height: 1.8; padding-left: 1.2rem;">
+            <li><b>Feature Map Extraction:</b><br>Pass X-ray tensor <i>A</i> through DenseNet121 backbone layer <code>densenet121</code> to extract spatial feature map <i>A<sup>k</sup></i>.</li>
+            <li><b>Gradient Computation:</b><br>Compute gradients of class score <i>y<sup>c</sup></i> with respect to feature activation maps <i>A<sup>k</sup></i>.</li>
+            <li><b>Global Average Pooling Weights:</b><br>Pool gradients over spatial height <i>u</i> and width <i>v</i> to compute channel importance weights α<sub>k</sub><sup>c</sup>.</li>
+            <li><b>Weighted Combination & ReLU:</b><br>Perform linear combination of feature maps weighted by α<sub>k</sub><sup>c</sup>, followed by ReLU activation to extract positive contributions only.</li>
+        </ol>
+    </div>
+
+    <div class="card-container">
+        <h3 style="color: #38bdf8; margin-top: 0;">📍 Spatial Activation Centroid Calculation</h3>
+        <p style="color: #cbd5e1; line-height: 1.6;">
+            To convert raw heatmaps into plain spatial descriptions, ChestVision AI locates the spatial centroid 
+            of high-activation pixels (activation ≥ 0.6):
+        </p>
+        <ul style="color: #cbd5e1; line-height: 1.8; padding-left: 1.2rem;">
+            <li><b>Grid Partitioning:</b><br>The 224×224 normalized heatmap is divided into a 3×3 grid:
+                <ul>
+                    <li>Vertical: Upper (y &lt; 0.33), Central (0.33 ≤ y ≤ 0.66), Lower (y &gt; 0.66)</li>
+                    <li>Horizontal: Left (x &lt; 0.33), Central (0.33 ≤ x ≤ 0.66), Right (x &gt; 0.66)</li>
+                </ul>
+            </li>
+            <li><b>Output Description Examples:</b>
+                <ul>
+                    <li><code>upper-right lung field</code></li>
+                    <li><code>central lung field</code></li>
+                    <li><code>diffuse regions across the lung fields</code></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="disclaimer-box">
+    <b>Medical Disclaimer:</b> {{ medical_disclaimer }}
+</div>
+{% endblock %}

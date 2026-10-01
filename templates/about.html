@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}ChestVision AI - About{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 0.25rem;">ℹ️ About ChestVision AI</h2>
+<p style="color: #94a3b8; margin-bottom: 2rem;">Production-grade medical AI dashboard ported to FastAPI framework.</p>
+
+<div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.75rem; color: #cbd5e1; line-height: 1.7; margin-bottom: 2rem;">
+    <h3 style="color: #f8fafc; margin-top: 0;">Project Overview</h3>
+    <p>
+        <b>ChestVision AI</b> is an explainable deep learning prototype designed for multi-task chest radiograph analysis. 
+        It integrates state-of-the-art computer vision architectures to perform automated classification, pixel-level lung field 
+        segmentation, and visual model explainability via Grad-CAM.
+    </p>
+    
+    <h4 style="color: #38bdf8;">Training Dataset</h4>
+    <p>
+        Models were trained and evaluated on the public <b>COVID-19 Radiography Database</b>, comprising chest radiograph images 
+        categorized into four distinct groups:
+    </p>
+    <ul style="padding-left: 1.2rem;">
+        <li><b>COVID:</b> Confirmed COVID-19 cases</li>
+        <li><b>Lung_Opacity:</b> Non-COVID lung opacities</li>
+        <li><b>Normal:</b> Healthy control chest radiographs</li>
+        <li><b>Viral Pneumonia:</b> Viral pneumonia chest radiographs</li>
+    </ul>
+
+    <h4 style="color: #38bdf8;">Technology Stack</h4>
+    <p>
+        Python • FastAPI • Uvicorn • Jinja2 HTML Templates • TensorFlow / Keras • OpenCV • NumPy • Pandas • Chart.js
+    </p>
+</div>
+
+<div class="disclaimer-box">
+    <b>Medical Disclaimer:</b> {{ medical_disclaimer }}
+</div>
+{% endblock %}

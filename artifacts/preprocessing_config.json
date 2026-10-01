@@ -1,0 +1,6 @@
+{
+  "img_size": 224,
+  "classifier_preprocessing": "DenseNet121 (tf.keras.applications.densenet.preprocess_input)",
+  "segmenter_preprocessing": "divide by 255.0 to [0,1] range",
+  "mask_binarization_threshold": 0.5
+}
