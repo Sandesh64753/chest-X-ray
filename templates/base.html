@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/assets/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* FastAPI Layout Structure */
+        /* FastAPI Layout & Responsive Navigation Structure */
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -17,6 +17,24 @@
             display: flex;
             min-height: 100vh;
         }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 950;
+        }
+
         .app-sidebar {
             width: 280px;
             background-color: #0f172a;
@@ -28,14 +46,18 @@
             top: 0;
             bottom: 0;
             left: 0;
-            z-index: 100;
+            z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .app-main {
             margin-left: 280px;
             flex: 1;
-            padding: 2rem 3rem 4rem 3rem;
+            padding: 2rem 2.5rem 4rem 2.5rem;
             max-width: 1400px;
+            width: calc(100% - 280px);
         }
+
         .nav-links {
             list-style: none;
             padding: 0;
@@ -85,7 +107,7 @@
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 12px;
-            padding: 1rem;
+            padding: 1.25rem;
             margin-bottom: 1rem;
         }
         .form-file-input {
@@ -106,8 +128,12 @@
             font-weight: 600;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s ease;
             width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
         }
         .btn-submit:hover {
             background-color: #0369a1;
@@ -121,7 +147,9 @@
             font-weight: 500;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.2s;
         }
         .btn-secondary:hover {
@@ -151,10 +179,70 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 991px) {
+            body {
+                flex-direction: column;
+            }
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background-color: #0f172a;
+                border-bottom: 1px solid #1e293b;
+                padding: 0.85rem 1.25rem;
+                position: sticky;
+                top: 0;
+                width: 100%;
+                z-index: 900;
+            }
+            .mobile-brand {
+                font-size: 1.15rem;
+                font-weight: 700;
+                color: #f8fafc;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .mobile-menu-btn {
+                background: #1e293b;
+                border: 1px solid #334155;
+                color: #38bdf8;
+                font-size: 1.25rem;
+                padding: 0.4rem 0.75rem;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            .app-sidebar {
+                transform: translateX(-100%);
+                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+            }
+            .app-sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .app-main {
+                margin-left: 0;
+                width: 100%;
+                padding: 1.25rem 1rem 3rem 1rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <aside class="app-sidebar">
+    <!-- Mobile Top Header Bar -->
+    <header class="mobile-header">
+        <div class="mobile-brand">🫁 ChestVision AI</div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation Menu">☰</button>
+    </header>
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="app-sidebar" id="appSidebar">
         <div class="sidebar-brand">🫁 ChestVision AI</div>
         <div class="sidebar-desc">Explainable AI for Chest X-ray Analysis</div>
         <hr style="border: 0; border-top: 1px solid #1e293b; margin: 1rem 0;">
@@ -179,5 +267,31 @@
     <main class="app-main">
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuBtn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+
+            if (menuBtn) menuBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            // Close sidebar when clicking any navigation link on mobile
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', closeSidebar);
+            });
+        });
+    </script>
 </body>
 </html>

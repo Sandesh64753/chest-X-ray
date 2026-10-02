@@ -83,24 +83,30 @@ def analyze_single_xray(raw_img_uint8):
 
 @app.get("/", response_class=HTMLResponse)
 async def route_dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "active_page": "dashboard",
-        "models_loaded": models_loaded,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "active_page": "dashboard",
+            "models_loaded": models_loaded,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/analyze", response_class=HTMLResponse)
 async def route_analyze_get(request: Request):
-    return templates.TemplateResponse("analyze.html", {
-        "request": request,
-        "active_page": "analyze",
-        "models_loaded": models_loaded,
-        "model_error": model_error_msg,
-        "results": None,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="analyze.html",
+        context={
+            "active_page": "analyze",
+            "models_loaded": models_loaded,
+            "model_error": model_error_msg,
+            "results": None,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.post("/analyze", response_class=HTMLResponse)
@@ -148,27 +154,33 @@ async def route_analyze_post(
             "timestamp": analysis_res["timestamp"]
         }
 
-    return templates.TemplateResponse("analyze.html", {
-        "request": request,
-        "active_page": "analyze",
-        "models_loaded": models_loaded,
-        "model_error": model_error_msg,
-        "results": results,
-        "class_colors": CLASS_COLORS,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="analyze.html",
+        context={
+            "active_page": "analyze",
+            "models_loaded": models_loaded,
+            "model_error": model_error_msg,
+            "results": results,
+            "class_colors": CLASS_COLORS,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/compare", response_class=HTMLResponse)
 async def route_compare_get(request: Request):
-    return templates.TemplateResponse("compare.html", {
-        "request": request,
-        "active_page": "compare",
-        "models_loaded": models_loaded,
-        "model_error": model_error_msg,
-        "comparison": None,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="compare.html",
+        context={
+            "active_page": "compare",
+            "models_loaded": models_loaded,
+            "model_error": model_error_msg,
+            "comparison": None,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.post("/compare", response_class=HTMLResponse)
@@ -227,54 +239,66 @@ async def route_compare_post(
         d = diffs["class_probability_deltas"][cls] * 100
         delta_table.append({"cls": cls, "p1": p1, "p2": p2, "d": d})
 
-    return templates.TemplateResponse("compare.html", {
-        "request": request,
-        "active_page": "compare",
-        "models_loaded": models_loaded,
-        "model_error": model_error_msg,
-        "img1_b64": image_to_base64(img1_np),
-        "img2_b64": image_to_base64(img2_np),
-        "res1": res1,
-        "res2": res2,
-        "comparison": cmp_res,
-        "diffs": diffs,
-        "delta_table": delta_table,
-        "res1_gcam_overlay_b64": image_to_base64(res1["gradcam"]["overlay"]),
-        "res1_mask_b64": image_to_base64(res1["segmentation"]["mask_binary"]),
-        "res2_gcam_overlay_b64": image_to_base64(res2["gradcam"]["overlay"]),
-        "res2_mask_b64": image_to_base64(res2["segmentation"]["mask_binary"]),
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="compare.html",
+        context={
+            "active_page": "compare",
+            "models_loaded": models_loaded,
+            "model_error": model_error_msg,
+            "img1_b64": image_to_base64(img1_np),
+            "img2_b64": image_to_base64(img2_np),
+            "res1": res1,
+            "res2": res2,
+            "comparison": cmp_res,
+            "diffs": diffs,
+            "delta_table": delta_table,
+            "res1_gcam_overlay_b64": image_to_base64(res1["gradcam"]["overlay"]),
+            "res1_mask_b64": image_to_base64(res1["segmentation"]["mask_binary"]),
+            "res2_gcam_overlay_b64": image_to_base64(res2["gradcam"]["overlay"]),
+            "res2_mask_b64": image_to_base64(res2["segmentation"]["mask_binary"]),
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/explainability", response_class=HTMLResponse)
 async def route_explainability(request: Request):
-    return templates.TemplateResponse("explainability.html", {
-        "request": request,
-        "active_page": "explainability",
-        "models_loaded": models_loaded,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="explainability.html",
+        context={
+            "active_page": "explainability",
+            "models_loaded": models_loaded,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/model-info", response_class=HTMLResponse)
 async def route_model_info(request: Request):
-    return templates.TemplateResponse("model_info.html", {
-        "request": request,
-        "active_page": "model_info",
-        "models_loaded": models_loaded,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="model_info.html",
+        context={
+            "active_page": "model_info",
+            "models_loaded": models_loaded,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/about", response_class=HTMLResponse)
 async def route_about(request: Request):
-    return templates.TemplateResponse("about.html", {
-        "request": request,
-        "active_page": "about",
-        "models_loaded": models_loaded,
-        "medical_disclaimer": MEDICAL_DISCLAIMER
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="about.html",
+        context={
+            "active_page": "about",
+            "models_loaded": models_loaded,
+            "medical_disclaimer": MEDICAL_DISCLAIMER
+        }
+    )
 
 
 @app.get("/export/{fmt}")

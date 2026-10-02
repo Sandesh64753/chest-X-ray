@@ -13,7 +13,7 @@
 {% else %}
 
 <form id="compareForm" action="/compare" method="post" enctype="multipart/form-data">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div class="grid-2" style="margin-bottom: 2rem;">
         <!-- Image 1 Selection -->
         <div class="card-container">
             <h3 style="margin-top: 0; color: #38bdf8;">Image 1</h3>
@@ -32,7 +32,7 @@
             </div>
 
             <div style="margin: 1rem 0 0.5rem 0; font-size: 0.9rem; color: #94a3b8;">Or choose demo image:</div>
-            <button type="submit" name="use_demo1" value="true" class="btn-secondary">🖼️ Use Demo Image 1</button>
+            <button type="submit" name="use_demo1" value="true" class="btn-secondary" style="width: 100%;">🖼️ Use Demo Image 1</button>
 
             {% if img1_b64 %}
             <div style="margin-top: 1rem; text-align: center;">
@@ -60,7 +60,7 @@
             </div>
 
             <div style="margin: 1rem 0 0.5rem 0; font-size: 0.9rem; color: #94a3b8;">Or choose demo image:</div>
-            <button type="submit" name="use_demo2" value="true" class="btn-secondary">🖼️ Use Demo Image 2</button>
+            <button type="submit" name="use_demo2" value="true" class="btn-secondary" style="width: 100%;">🖼️ Use Demo Image 2</button>
 
             {% if img2_b64 %}
             <div style="margin-top: 1rem; text-align: center;">
@@ -79,7 +79,7 @@
 <h2>📊 Model Output Comparison</h2>
 
 <!-- Side-by-side Overview Cards -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+<div class="grid-2" style="margin-bottom: 2rem;">
     <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem;">
         <h4 style="color: #38bdf8; margin: 0 0 0.5rem 0;">Image 1 Result</h4>
         <div>Prediction: <b>{{ comparison.image_1.predicted_class }}</b> ({{ "%.1f"|format(comparison.image_1.confidence * 100) }}% confidence)</div>
@@ -98,7 +98,7 @@
 
 <!-- Quantitative Output Differences -->
 <h3>Quantitative Output Differences</h3>
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+<div class="grid-4" style="margin-bottom: 2rem;">
     <div class="metric-card">
         <div class="metric-label">Class Prediction Change</div>
         <div class="metric-value" style="color: {% if diffs.predicted_class_changed %}#f59e0b{% else %}#10b981{% endif %};">
@@ -127,23 +127,23 @@
 
 <!-- Per-Class Probability Shift Table -->
 <h3>Per-Class Probability Shift</h3>
-<div style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; overflow: hidden; margin-bottom: 2rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+<div class="table-responsive" style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; overflow-x: auto; margin-bottom: 2rem;">
+    <table class="table-custom">
         <thead>
-            <tr style="background: #1e293b; color: #38bdf8;">
-                <th style="padding: 0.85rem 1rem; border-bottom: 1px solid #334155;">Category</th>
-                <th style="padding: 0.85rem 1rem; border-bottom: 1px solid #334155;">Image 1 Prob (%)</th>
-                <th style="padding: 0.85rem 1rem; border-bottom: 1px solid #334155;">Image 2 Prob (%)</th>
-                <th style="padding: 0.85rem 1rem; border-bottom: 1px solid #334155;">Difference (pts)</th>
+            <tr>
+                <th>Category</th>
+                <th>Image 1 Prob (%)</th>
+                <th>Image 2 Prob (%)</th>
+                <th>Difference (pts)</th>
             </tr>
         </thead>
         <tbody>
             {% for row in delta_table %}
-            <tr style="border-bottom: 1px solid #1e293b;">
-                <td style="padding: 0.75rem 1rem; font-weight: 600; color: #f8fafc;">{{ row.cls }}</td>
-                <td style="padding: 0.75rem 1rem; color: #cbd5e1;">{{ "%.2f"|format(row.p1) }}%</td>
-                <td style="padding: 0.75rem 1rem; color: #cbd5e1;">{{ "%.2f"|format(row.p2) }}%</td>
-                <td style="padding: 0.75rem 1rem; font-weight: 600; color: {% if row.d > 0 %}#34d399{% elif row.d < 0 %}#f87171{% else %}#94a3b8{% endif %};">
+            <tr>
+                <td style="font-weight: 600; color: #f8fafc;">{{ row.cls }}</td>
+                <td style="color: #cbd5e1;">{{ "%.2f"|format(row.p1) }}%</td>
+                <td style="color: #cbd5e1;">{{ "%.2f"|format(row.p2) }}%</td>
+                <td style="font-weight: 600; color: {% if row.d > 0 %}#34d399{% elif row.d < 0 %}#f87171{% else %}#94a3b8{% endif %};">
                     {% if row.d > 0 %}📈 +{% elif row.d < 0 %}📉 {% else %}➖ {% endif %}{{ "%.2f"|format(row.d) }} pts
                 </td>
             </tr>
@@ -156,7 +156,7 @@
 
 <!-- Visual Side-by-Side Comparison -->
 <h3>Visual Side-by-Side Comparison</h3>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+<div class="grid-2" style="margin-bottom: 2rem;">
     <div>
         <div class="card-container" style="text-align: center; margin-bottom: 1.5rem;">
             <div class="image-card-header">Image 1 Grad-CAM Overlay</div>

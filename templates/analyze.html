@@ -12,7 +12,7 @@
 </div>
 {% else %}
 
-<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; margin-bottom: 2rem;">
+<div class="grid-form-pipeline" style="margin-bottom: 2rem;">
     <!-- Left Column: Upload Form -->
     <div class="card-container">
         <h3 style="margin-top: 0; color: #38bdf8;">Upload Image</h3>
@@ -32,9 +32,9 @@
             </div>
 
             <div style="margin: 1.25rem 0 0.5rem 0; font-weight: 600; color: #94a3b8;">Or choose a demo sample:</div>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
-                <button type="submit" name="sample" value="sample_1" class="btn-secondary">🖼️ Demo Sample 1</button>
-                <button type="submit" name="sample" value="sample_2" class="btn-secondary">🖼️ Demo Sample 2</button>
+            <div class="btn-group-responsive" style="margin-bottom: 1.25rem;">
+                <button type="submit" name="sample" value="sample_1" class="btn-secondary" style="flex: 1;">🖼️ Demo Sample 1</button>
+                <button type="submit" name="sample" value="sample_2" class="btn-secondary" style="flex: 1;">🖼️ Demo Sample 2</button>
             </div>
 
             <button type="submit" class="btn-submit">🚀 Run Analysis</button>
@@ -61,7 +61,7 @@
 <h2>📊 Analysis Dashboard</h2>
 
 <!-- Metric Cards Row -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+<div class="grid-4" style="margin-bottom: 2rem;">
     <div class="metric-card">
         <div class="metric-label">Predicted Class</div>
         <div class="metric-value" style="color: {{ results.pred_color }};">{{ results.classification.predicted_class }}</div>
@@ -88,14 +88,14 @@
 
 <!-- Classification Section -->
 <h3>🎯 Classification Result</h3>
-<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; margin-bottom: 2rem; align-items: center;">
+<div class="grid-classification-chart" style="margin-bottom: 2rem;">
     <div style="background: #1e293b; border: 1px solid #334155; border-left: 6px solid {{ results.pred_color }}; border-radius: 12px; padding: 1.5rem;">
         <div style="font-size: 0.9rem; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Predicted Class</div>
         <div style="font-size: 2rem; font-weight: 700; color: {{ results.pred_color }}; margin: 0.2rem 0;">{{ results.classification.predicted_class }}</div>
         <div style="font-size: 1.1rem; color: #cbd5e1;">Confidence: <b>{{ "%.2f"|format(results.classification.confidence * 100) }}%</b></div>
     </div>
-    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem;">
-        <canvas id="probChart" height="160"></canvas>
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem; position: relative; min-height: 200px;">
+        <canvas id="probChart"></canvas>
     </div>
 </div>
 
@@ -105,7 +105,7 @@
 <h3>🫁 Lung Segmentation</h3>
 <p><b>Lung Mask Area:</b> {{ "%.1f"|format(results.segmentation.mask_area_pct) }}% of total image area (computed from predicted mask pixels > 0.5).</p>
 
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+<div class="grid-3" style="margin-bottom: 2rem;">
     <div class="card-container" style="text-align: center;">
         <div class="image-card-header">Original X-ray</div>
         <img src="{{ results.raw_img_b64 }}" class="img-fluid" alt="Original X-ray">
@@ -127,7 +127,7 @@
 <p><b>Primary Activation Region:</b> <span style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-weight: 600;">{{ results.gradcam.region_description }}</span></p>
 <p style="font-size: 0.9rem; color: #94a3b8; margin-top: -0.5rem;">The highlighted region represents areas that contributed more strongly to the model's prediction.</p>
 
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+<div class="grid-3" style="margin-bottom: 2rem;">
     <div class="card-container" style="text-align: center;">
         <div class="image-card-header">Original X-ray</div>
         <img src="{{ results.raw_img_b64 }}" class="img-fluid" alt="Original X-ray">
@@ -148,24 +148,24 @@
 <h3>🔗 Complete X-ray Analysis View</h3>
 <div style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #3b82f6; width: 200px;">
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #3b82f6; min-width: 180px; flex: 1;">
             <div style="font-weight: 600; color: #38bdf8;">INPUT X-RAY</div>
             <div style="font-size: 0.8rem; color: #94a3b8;">224 × 224 RGB</div>
         </div>
         <div style="font-size: 1.5rem; color: #64748b;">➔</div>
-        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #10b981; width: 220px;">
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #10b981; min-width: 180px; flex: 1;">
             <div style="font-weight: 600; color: #34d399;">CLASSIFICATION</div>
             <div style="font-size: 0.9rem; font-weight: bold;">{{ results.classification.predicted_class }}</div>
             <div style="font-size: 0.8rem; color: #94a3b8;">{{ "%.1f"|format(results.classification.confidence * 100) }}% Confidence</div>
         </div>
         <div style="font-size: 1.5rem; color: #64748b;">➔</div>
-        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #a855f7; width: 220px;">
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #a855f7; min-width: 180px; flex: 1;">
             <div style="font-weight: 600; color: #c084fc;">SEGMENTATION</div>
             <div style="font-size: 0.9rem; font-weight: bold;">Lung Mask</div>
             <div style="font-size: 0.8rem; color: #94a3b8;">{{ "%.1f"|format(results.segmentation.mask_area_pct) }}% Area</div>
         </div>
         <div style="font-size: 1.5rem; color: #64748b;">➔</div>
-        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #f59e0b; width: 220px;">
+        <div style="background: #1e293b; padding: 1rem; border-radius: 10px; border: 1px solid #f59e0b; min-width: 180px; flex: 1;">
             <div style="font-weight: 600; color: #fbbf24;">GRAD-CAM EXPLANATION</div>
             <div style="font-size: 0.8rem; color: #f8fafc;">{{ results.gradcam.region_description }}</div>
         </div>
@@ -174,7 +174,7 @@
 
 <!-- Download Report Buttons -->
 <h3>📄 Export Analysis Report</h3>
-<div style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+<div class="btn-group-responsive" style="margin-bottom: 2rem;">
     <a href="/export/txt?timestamp={{ results.timestamp }}" target="_blank" class="btn-secondary" style="flex: 1; text-align: center;">📥 Download Summary Report (.TXT)</a>
     <a href="/export/json?timestamp={{ results.timestamp }}" target="_blank" class="btn-secondary" style="flex: 1; text-align: center;">📥 Download Machine Data (.JSON)</a>
 </div>
