@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 from functools import lru_cache
 import tensorflow as tf
 
@@ -121,12 +122,24 @@ def _load_single_model(path):
         loaders.append(tf.keras.models.load_model)
 
     last_error = None
-    for loader in loaders:
-        for compile_flag in [False, True]:
-            try:
-                return loader(path, compile=compile_flag, custom_objects=custom_objects)
-            except Exception as e:
-                last_error = e
+    with warnings.catch_warnings():
+        # Suppress harmless uncompiled model warnings during inference loading
+        warnings.filterwarnings('ignore', category=UserWarning, message='.*No training configuration found.*')
+        warnings.filterwarnings('ignore', category=UserWarning, message='.*compiled.*')
+
+        for loader in loaders:
+            for compile_flag in [False, True]:
+                try:
+                    model = loader(path, compile=compile_flag, custom_objects=custom_objects)
+                    # Compile model for inference if uncompiled
+                    if hasattr(model, 'compile'):
+                        try:
+                            model.compile(optimizer='adam', loss='categorical_crossentropy')
+                        except Exception:
+                            pass
+                    return model
+                except Exception as e:
+                    last_error = e
 
     raise last_error
 
