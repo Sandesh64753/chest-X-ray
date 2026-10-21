@@ -18,7 +18,9 @@ def predict_classification(classifier, raw_img_uint8):
             - pred_index: int
     """
     input_tensor = preprocess_for_classifier(raw_img_uint8)
-    probs = classifier.predict(input_tensor, verbose=0)[0]
+    
+    # Direct tensor call avoids tf.data worker thread allocations and memory accumulation
+    probs = classifier(input_tensor, training=False).numpy()[0]
     
     pred_index = int(np.argmax(probs))
     predicted_class = CLASS_NAMES[pred_index]

@@ -12,6 +12,12 @@
 </div>
 {% else %}
 
+{% if upload_error %}
+<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 10px; padding: 1rem; color: #fca5a5; margin-bottom: 2rem;">
+    ⚠️ {{ upload_error }}
+</div>
+{% endif %}
+
 <form id="compareForm" action="/compare" method="post" enctype="multipart/form-data">
     <div class="grid-2" style="margin-bottom: 2rem;">
         <!-- Image 1 Selection -->

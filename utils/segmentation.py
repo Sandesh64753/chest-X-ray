@@ -20,7 +20,9 @@ def predict_segmentation(segmenter, raw_img_uint8, threshold=MASK_BINARIZATION_T
             - overlay: uint8 RGB image with lung mask overlay
     """
     input_tensor = preprocess_for_segmenter(raw_img_uint8)
-    pred_mask = segmenter.predict(input_tensor, verbose=0)[0]  # shape (224, 224, 1)
+    
+    # Direct tensor call avoids tf.data worker thread allocations and memory accumulation
+    pred_mask = segmenter(input_tensor, training=False).numpy()[0]  # shape (224, 224, 1)
     mask_prob = np.squeeze(pred_mask)  # shape (224, 224)
     
     mask_binary_bool = mask_prob > threshold

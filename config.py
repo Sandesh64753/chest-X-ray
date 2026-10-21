@@ -1,5 +1,14 @@
 import os
 
+# Set optimal TensorFlow CPU memory and threading configurations before TF import
+# Crucial for resource-constrained environments (e.g. Render Free/Starter 512MB RAM)
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
+os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 # Base paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,6 +35,15 @@ NUM_CLASSES = len(CLASS_NAMES)
 IMG_SIZE = 224
 MASK_SIZE = 224
 MASK_BINARIZATION_THRESHOLD = 0.5
+
+# Upload Constraints
+MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "15"))
+MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+ALLOWED_CONTENT_TYPES = {
+    "image/png", "image/jpeg", "image/jpg", "image/bmp", "image/webp",
+    "application/octet-stream"
+}
 
 # Color Palette for Visualizations (Medical UI Theme)
 CLASS_COLORS = {

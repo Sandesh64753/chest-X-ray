@@ -131,12 +131,6 @@ def _load_single_model(path):
             for compile_flag in [False, True]:
                 try:
                     model = loader(path, compile=compile_flag, custom_objects=custom_objects)
-                    # Compile model for inference if uncompiled
-                    if hasattr(model, 'compile'):
-                        try:
-                            model.compile(optimizer='adam', loss='categorical_crossentropy')
-                        except Exception:
-                            pass
                     return model
                 except Exception as e:
                     last_error = e

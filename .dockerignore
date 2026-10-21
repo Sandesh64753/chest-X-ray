@@ -13,3 +13,11 @@ venv/
 .idea/
 scratch/
 *.log
+
+# Exclude notebooks and training split csvs to keep Docker build context slim
+*.ipynb
+artifacts/*.csv
+artifacts/*.png
+artifacts/*.json
+artifacts/classifier_stage1_best.keras
+tests/

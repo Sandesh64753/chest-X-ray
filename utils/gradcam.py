@@ -17,7 +17,7 @@ def get_densenet_base(classifier):
 def make_gradcam_heatmap(img_batch_cls, classifier, densenet_base=None, pred_index=None):
     """
     Computes Grad-CAM heatmap for a given input batch tensor using GradientTape.
-    Follows notebook implementation.
+    Follows notebook implementation with explicit tensor cleanup.
     """
     if densenet_base is None:
         densenet_base = get_densenet_base(classifier)
@@ -67,7 +67,15 @@ def make_gradcam_heatmap(img_batch_cls, classifier, densenet_base=None, pred_ind
     if max_val > 0:
         heatmap = heatmap / (max_val + 1e-8)
 
-    return heatmap.numpy(), int(pred_index), predictions.numpy()[0]
+    heatmap_np = heatmap.numpy()
+    pred_index_int = int(pred_index)
+    preds_np = predictions.numpy()[0]
+
+    # Explicitly release references to tensors and tape to prevent memory retention
+    del tape
+    del conv_outputs, grads, pooled_grads, heatmap, predictions, class_channel
+
+    return heatmap_np, pred_index_int, preds_np
 
 def overlay_gradcam(raw_img_uint8, heatmap, alpha=0.4):
     """

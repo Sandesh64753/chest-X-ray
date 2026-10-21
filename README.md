@@ -109,7 +109,20 @@ Open your browser and navigate to: `http://127.0.0.1:8000`
 
 ---
 
-## 🐳 Docker Deployment Guide
+## 🐳 Docker & Render Deployment Guide
+
+### Render Deployment Configuration
+* **Environment:** Docker
+* **Build Context:** `.` (Slim context with unnecessary artifacts excluded via `.dockerignore`)
+* **Port:** Render automatically sets `$PORT` (default fallback `10000`).
+* **Health Check Path:** `/health`
+* **Instance Recommendation:**
+  * Render **Free / Starter (512MB RAM)**: TensorFlow thread and memory optimizations (`TF_ENABLE_ONEDNN_OPTS=0`, `TF_NUM_INTRAOP_THREADS=1`, `OMP_NUM_THREADS=1`) limit peak memory usage. An asynchronous concurrency lock (`inference_lock`) and threadpool offloading ensure the container stays responsive and avoids OOM kills.
+  * For high-traffic or multi-user production environments, standard 1GB+ RAM instances are recommended.
+
+### Health & Diagnostic Endpoints
+* `GET /health`: Lightweight probe returning `{"status": "healthy", "service": "ChestVision AI", "models_loaded": true}` without triggering expensive model execution.
+* `GET /ready`: Readiness check confirming both DenseNet121 and U-Net models are loaded and ready to serve inference.
 
 ### Option 1: Deploy with Docker Compose (Recommended)
 
