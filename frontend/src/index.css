@@ -1,0 +1,294 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', monospace;
+}
+
+/* ============================================================
+   Base styles: Duality of Deep Black & Layered Charcoal Grey
+   White typography, no neon
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background-color: #09090b; /* Pure Deep Black */
+  color: #ffffff;            /* Pure Crisp White Typography */
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ============================================================
+   Component classes: Dual Grey & Black Palette
+   ============================================================ */
+
+/* ---- Card Surface ---- */
+.card {
+  background-color: #121316; /* Deep Charcoal Grey */
+  border-radius: 0.75rem;
+  border: 1px solid #22242a; /* Subtle Architectural Grey Border */
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+}
+
+/* ---- Buttons ---- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  background-color: #ffffff; /* Crisp white button with deep black text for ultimate clean contrast */
+  color: #09090b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary:hover {
+  background-color: #e4e4e7;
+  border-color: #e4e4e7;
+}
+.btn-primary:active {
+  background-color: #d4d4d8;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  background-color: #1b1d22; /* Medium Charcoal Grey */
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: 1px solid #2c2f37;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: #262830;
+  border-color: #3b3f4a;
+  color: #ffffff;
+}
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #32353e;
+  color: #ffffff;
+  background-color: #14151a;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-outline:hover {
+  background-color: #20222a;
+  border-color: #484c58;
+}
+.btn-outline:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- Badges: Sophisticated Muted Tones (No Neon) ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #ffffff;
+}
+.badge-green {
+  background-color: #152219;
+  border: 1px solid #28442e;
+  color: #e2fbe8;
+}
+.badge-red {
+  background-color: #261616;
+  border: 1px solid #4a2727;
+  color: #fee2e2;
+}
+.badge-amber {
+  background-color: #241c14;
+  border: 1px solid #483421;
+  color: #fef3c7;
+}
+.badge-blue {
+  background-color: #161c27;
+  border: 1px solid #25334c;
+  color: #e0e7ff;
+}
+.badge-slate {
+  background-color: #1c1e24;
+  border: 1px solid #2d303a;
+  color: #ffffff;
+}
+
+/* ---- Section headings ---- */
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ffffff; /* Crisp White */
+  letter-spacing: -0.01em;
+}
+.section-subtitle {
+  font-size: 0.875rem;
+  color: #a1a1aa; /* Soft Light Grey */
+  margin-top: 0.2rem;
+}
+
+/* ---- Disclaimer Box ---- */
+.disclaimer-box {
+  background-color: #121317;
+  border: 1px solid #272a33;
+  border-radius: 0.625rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.78rem;
+  color: #d4d4d8;
+  line-height: 1.6;
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ---- Drop Zone ---- */
+.dropzone {
+  border: 2px dashed #2f323c;
+  border-radius: 0.75rem;
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: #0f1013;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+.dropzone:hover {
+  border-color: #525666;
+  background-color: #16171d;
+}
+.dropzone.active {
+  border-color: #717585;
+  background-color: #1c1e26;
+}
+
+/* ---- Stat Rows ---- */
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #1c1e24;
+}
+.stat-row:last-child {
+  border-bottom: none;
+}
+.stat-label {
+  font-size: 0.875rem;
+  color: #a1a1aa;
+}
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ---- Probability Bars ---- */
+.prob-bar-track {
+  height: 0.5rem;
+  background-color: #1c1e24;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.prob-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+/* ---- Navigation Links ---- */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #a1a1aa;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.nav-link:hover {
+  color: #ffffff;
+  background-color: #191b21;
+}
+.nav-link.active {
+  color: #ffffff;
+  background-color: #23252e;
+  border: 1px solid #333642;
+}
+
+/* ---- Spinner ---- */
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #272932;
+  border-top-color: #ffffff;
+  border-radius: 9999px;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Image Panel ---- */
+.img-panel {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #24262f;
+  background-color: #060708;
+}
+.img-panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ============================================================
+   Scrollbars
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #272932;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f424e;
+}

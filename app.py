@@ -7,12 +7,11 @@ import gc
 import asyncio
 from PIL import Image, UnidentifiedImageError
 import numpy as np
-import pandas as pd
 
-from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException, status
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 
 from config import (
@@ -37,11 +36,11 @@ logging.basicConfig(
 logger = logging.getLogger("chestvision")
 
 # Initialize Concurrency Lock for Heavy ML Inference
-# Limits simultaneous execution to 1 to prevent memory exhaustion in container environments
 inference_lock = asyncio.Lock()
 
-# Helper function: Convert NumPy RGB uint8 array to Base64 PNG data URL
+
 def image_to_base64(img_uint8: np.ndarray) -> str:
+    """Convert NumPy RGB uint8 array to Base64 PNG data URL."""
     if img_uint8 is None:
         return ""
     pil_img = Image.fromarray(img_uint8)
@@ -50,20 +49,27 @@ def image_to_base64(img_uint8: np.ndarray) -> str:
     b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
     return f"data:image/png;base64,{b64_str}"
 
+
 # Initialize FastAPI App
 app = FastAPI(
-    title="ChestVision AI",
-    description="Explainable Chest X-ray Analysis Dashboard powered by FastAPI & TensorFlow",
-    version="1.1"
+    title="ChestVision AI API",
+    description="REST API for Explainable Chest X-ray Analysis powered by FastAPI & TensorFlow",
+    version="2.0"
 )
 
-# Mount Static Assets & Templates
+# CORS — allow React frontend (dev + prod)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://frontend:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount sample images for static access
 base_dir = os.path.dirname(os.path.abspath(__file__))
 assets_dir = os.path.join(base_dir, "assets")
-templates_dir = os.path.join(base_dir, "templates")
-
 app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-templates = Jinja2Templates(directory=templates_dir)
 
 # Load Deep Learning Models at Startup
 try:
@@ -79,16 +85,15 @@ except Exception as e:
     model_error_msg = str(e)
     logger.exception("Critical error loading deep learning models: %s", str(e))
 
-# In-memory storage for export reports
+# In-memory cache for latest analysis (export)
 cache_report = {}
 
 
 def analyze_single_xray(raw_img_uint8: np.ndarray) -> dict:
     """
-    Synchronous analysis pipeline executing classification, segmentation, and Grad-CAM.
-    Designed to run inside run_in_threadpool so the asyncio event loop is never blocked.
+    Synchronous analysis pipeline: classification, segmentation, Grad-CAM.
+    Runs inside run_in_threadpool so asyncio event loop is never blocked.
     """
-    # Stage 4: Classification
     t_cls_start = time.perf_counter()
     logger.info("Stage 4/8: Classification inference started...")
     try:
@@ -103,7 +108,6 @@ def analyze_single_xray(raw_img_uint8: np.ndarray) -> dict:
         logger.exception("Classification failure: %s", str(exc))
         raise RuntimeError(f"Classification failed: {str(exc)}") from exc
 
-    # Stage 5: Segmentation
     t_seg_start = time.perf_counter()
     logger.info("Stage 5/8: Segmentation inference started...")
     try:
@@ -117,7 +121,6 @@ def analyze_single_xray(raw_img_uint8: np.ndarray) -> dict:
         logger.exception("Segmentation failure: %s", str(exc))
         raise RuntimeError(f"Segmentation failed: {str(exc)}") from exc
 
-    # Stage 6: Grad-CAM Explainability
     t_gcam_start = time.perf_counter()
     logger.info("Stage 6/8: Grad-CAM generation started...")
     try:
@@ -131,43 +134,35 @@ def analyze_single_xray(raw_img_uint8: np.ndarray) -> dict:
         logger.exception("Grad-CAM generation failure: %s", str(exc))
         raise RuntimeError(f"Grad-CAM generation failed: {str(exc)}") from exc
 
-    # Force memory garbage collection after tensor operations
     gc.collect()
 
-    analysis = {
+    return {
         "raw_image": raw_img_uint8,
         "classification": cls_res,
         "segmentation": seg_res,
         "gradcam": gcam_res,
         "timestamp": time.strftime("%H:%M:%S")
     }
-    return analysis
 
 
 async def read_and_validate_upload(file: UploadFile) -> np.ndarray:
-    """
-    Safely reads and validates uploaded file with chunked bounds checking
-    and decodes into a verified 224x224x3 uint8 array.
-    """
+    """Validates + decodes an uploaded image into a 224x224x3 uint8 array."""
     if file is None or not file.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No file selected for upload."
         )
 
-    # Validate file extension
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_IMAGE_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file format '{ext}'. Allowed formats: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}"
+            detail=f"Unsupported file format '{ext}'. Allowed: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}"
         )
 
-    # Validate content-type if provided
     if file.content_type and file.content_type.lower() not in ALLOWED_CONTENT_TYPES:
-        logger.warning("Unusual content-type '%s' for file '%s', checking extension.", file.content_type, file.filename)
+        logger.warning("Unusual content-type '%s' for '%s'", file.content_type, file.filename)
 
-    # Chunked read up to MAX_UPLOAD_SIZE_BYTES to prevent memory saturation
     bytes_buffer = bytearray()
     chunk_size = 64 * 1024
     total_read = 0
@@ -179,7 +174,7 @@ async def read_and_validate_upload(file: UploadFile) -> np.ndarray:
         total_read += len(chunk)
         if total_read > MAX_UPLOAD_SIZE_BYTES:
             raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File exceeds maximum allowed size of {MAX_UPLOAD_SIZE_MB}MB."
             )
         bytes_buffer.extend(chunk)
@@ -191,24 +186,19 @@ async def read_and_validate_upload(file: UploadFile) -> np.ndarray:
         )
 
     logger.info(
-        "Stage 2/8: Upload validated - filename='%s', content_type='%s', size=%.2f KB",
-        file.filename, file.content_type, total_read / 1024.0
+        "Stage 2/8: Upload validated - filename='%s', size=%.2f KB",
+        file.filename, total_read / 1024.0
     )
 
-    # Stage 3: Image decoding and preprocessing
-    t_decode_start = time.perf_counter()
     try:
         raw_img_uint8 = load_and_preprocess_pil_image(io.BytesIO(bytes_buffer))
-        logger.info("Stage 3/8: Image decoded and resized to (%d, %d, 3) in %.3fs", IMG_SIZE, IMG_SIZE, time.perf_counter() - t_decode_start)
         return raw_img_uint8
     except UnidentifiedImageError as uie:
-        logger.warning("Uploaded file is not a valid decodable image: %s", str(uie))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded file is not a valid or supported image."
         ) from uie
     except Exception as exc:
-        logger.exception("Unexpected error while decoding image: %s", str(exc))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to process image: {str(exc)}"
@@ -216,15 +206,12 @@ async def read_and_validate_upload(file: UploadFile) -> np.ndarray:
 
 
 # ==============================================================================
-# HEALTH & READINESS ENDPOINTS
+# HEALTH ENDPOINTS
 # ==============================================================================
 
-@app.get("/health")
+@app.get("/api/health")
 async def route_health():
-    """
-    Lightweight healthcheck endpoint for Docker and Render load balancer.
-    Does not execute expensive model operations.
-    """
+    """Lightweight health check for Docker and load balancer."""
     return {
         "status": "healthy" if models_loaded else "degraded",
         "service": "ChestVision AI",
@@ -233,11 +220,9 @@ async def route_health():
     }
 
 
-@app.get("/ready")
+@app.get("/api/ready")
 async def route_ready():
-    """
-    Readiness endpoint verifying that models are present and ready for inference.
-    """
+    """Readiness check verifying models are loaded."""
     if not models_loaded:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -251,278 +236,149 @@ async def route_ready():
 
 
 # ==============================================================================
-# FASTAPI APPLICATION ROUTES
+# ANALYSIS ENDPOINTS
 # ==============================================================================
 
-@app.get("/", response_class=HTMLResponse)
-async def route_dashboard(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context={
-            "active_page": "dashboard",
-            "models_loaded": models_loaded,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.get("/analyze", response_class=HTMLResponse)
-async def route_analyze_get(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="analyze.html",
-        context={
-            "active_page": "analyze",
-            "models_loaded": models_loaded,
-            "model_error": model_error_msg,
-            "results": None,
-            "upload_error": None,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.post("/analyze", response_class=HTMLResponse)
-async def route_analyze_post(
-    request: Request,
+@app.post("/api/analyze")
+async def route_analyze(
     file: UploadFile = File(None),
     sample: str = Form(None)
 ):
+    """
+    Accepts an uploaded chest X-ray or a sample key ('sample_1', 'sample_2').
+    Returns JSON with classification, segmentation, and Grad-CAM results.
+    """
     t_req_start = time.perf_counter()
-    client_host = request.client.host if request.client else "unknown"
-    logger.info("Stage 1/8: Request received - POST /analyze from client %s", client_host)
+    logger.info("Stage 1/8: POST /api/analyze received")
 
     if not models_loaded:
-        logger.error("Analysis requested while models are not loaded: %s", model_error_msg)
-        return templates.TemplateResponse(
-            request=request,
-            name="analyze.html",
+        raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            context={
-                "active_page": "analyze",
-                "models_loaded": False,
-                "model_error": model_error_msg,
-                "results": None,
-                "upload_error": "Deep learning models are currently unavailable.",
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
+            detail="Deep learning models are currently unavailable."
         )
 
     raw_img_uint8 = None
-    upload_error = None
     sample_dir = os.path.join(base_dir, "assets", "samples")
 
-    try:
-        # Check sample selection
-        if sample == "sample_1":
-            s_path = os.path.join(sample_dir, "sample_xray_1.png")
-            if os.path.exists(s_path):
-                logger.info("Stage 2/8: Selected Demo Sample 1: %s", s_path)
-                raw_img_uint8 = load_and_preprocess_pil_image(s_path)
-            else:
-                upload_error = "Demo Sample 1 file not found on server."
-        elif sample == "sample_2":
-            s_path = os.path.join(sample_dir, "sample_xray_2.png")
-            if os.path.exists(s_path):
-                logger.info("Stage 2/8: Selected Demo Sample 2: %s", s_path)
-                raw_img_uint8 = load_and_preprocess_pil_image(s_path)
-            else:
-                upload_error = "Demo Sample 2 file not found on server."
-        elif file is not None and file.filename:
-            raw_img_uint8 = await read_and_validate_upload(file)
+    if sample == "sample_1":
+        s_path = os.path.join(sample_dir, "sample_xray_1.png")
+        if os.path.exists(s_path):
+            logger.info("Stage 2/8: Selected Demo Sample 1")
+            raw_img_uint8 = load_and_preprocess_pil_image(s_path)
         else:
-            upload_error = "Please upload a chest X-ray image (PNG, JPG, JPEG) or choose a demo sample."
-
-    except HTTPException as he:
-        upload_error = he.detail
-        logger.warning("Upload validation rejected with status %d: %s", he.status_code, he.detail)
-    except Exception as exc:
-        upload_error = f"Error processing uploaded image: {str(exc)}"
-        logger.exception("Unexpected error in upload handling: %s", str(exc))
-
-    if upload_error or raw_img_uint8 is None:
-        return templates.TemplateResponse(
-            request=request,
-            name="analyze.html",
+            raise HTTPException(status_code=404, detail="Demo Sample 1 not found on server.")
+    elif sample == "sample_2":
+        s_path = os.path.join(sample_dir, "sample_xray_2.png")
+        if os.path.exists(s_path):
+            logger.info("Stage 2/8: Selected Demo Sample 2")
+            raw_img_uint8 = load_and_preprocess_pil_image(s_path)
+        else:
+            raise HTTPException(status_code=404, detail="Demo Sample 2 not found on server.")
+    elif file is not None and file.filename:
+        raw_img_uint8 = await read_and_validate_upload(file)
+    else:
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            context={
-                "active_page": "analyze",
-                "models_loaded": models_loaded,
-                "model_error": model_error_msg,
-                "results": None,
-                "upload_error": upload_error or "No image available for analysis.",
-                "class_colors": CLASS_COLORS,
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
+            detail="Please upload a chest X-ray image or choose a demo sample."
         )
 
-    # Execute ML Inference under concurrency lock using threadpool
-    results = None
     try:
         async with inference_lock:
             analysis_res = await run_in_threadpool(analyze_single_xray, raw_img_uint8)
 
         cache_report["latest"] = analysis_res
 
-        # Stage 7: Base64 encoding
-        t_b64_start = time.perf_counter()
         pred_cls = analysis_res["classification"]["predicted_class"]
         pred_color = CLASS_COLORS.get(pred_cls, "#0284c7")
 
-        results = {
-            "classification": analysis_res["classification"],
-            "segmentation": analysis_res["segmentation"],
-            "gradcam": analysis_res["gradcam"],
-            "pred_color": pred_color,
-            "raw_img_b64": image_to_base64(raw_img_uint8),
-            "mask_b64": image_to_base64(analysis_res["segmentation"]["mask_binary"]),
-            "seg_overlay_b64": image_to_base64(analysis_res["segmentation"]["overlay"]),
-            "heatmap_b64": image_to_base64(analysis_res["gradcam"]["heatmap_color"]),
-            "gcam_overlay_b64": image_to_base64(analysis_res["gradcam"]["overlay"]),
-            "timestamp": analysis_res["timestamp"]
+        # Serialize numpy arrays -> base64 for JSON transport
+        result = {
+            "classification": {
+                "predicted_class": analysis_res["classification"]["predicted_class"],
+                "confidence": analysis_res["classification"]["confidence"],
+                "class_probabilities": analysis_res["classification"]["class_probabilities"],
+                "pred_color": pred_color,
+            },
+            "segmentation": {
+                "mask_area_pct": analysis_res["segmentation"]["mask_area_pct"],
+            },
+            "gradcam": {
+                "region_description": analysis_res["gradcam"]["region_description"],
+            },
+            "images": {
+                "raw": image_to_base64(raw_img_uint8),
+                "mask": image_to_base64(analysis_res["segmentation"]["mask_binary"]),
+                "seg_overlay": image_to_base64(analysis_res["segmentation"]["overlay"]),
+                "heatmap": image_to_base64(analysis_res["gradcam"]["heatmap_color"]),
+                "gcam_overlay": image_to_base64(analysis_res["gradcam"]["overlay"]),
+            },
+            "timestamp": analysis_res["timestamp"],
+            "class_colors": CLASS_COLORS,
+            "medical_disclaimer": MEDICAL_DISCLAIMER,
         }
-        logger.info("Stage 7/8: Base64 image encoding completed in %.3fs", time.perf_counter() - t_b64_start)
+
+        logger.info(
+            "Stage 8/8: Analysis complete in %.3fs total.",
+            time.perf_counter() - t_req_start
+        )
+        return JSONResponse(content=result)
 
     except Exception as exc:
         logger.exception("Inference execution failed: %s", str(exc))
-        return templates.TemplateResponse(
-            request=request,
-            name="analyze.html",
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            context={
-                "active_page": "analyze",
-                "models_loaded": models_loaded,
-                "model_error": model_error_msg,
-                "results": None,
-                "upload_error": "An internal error occurred during X-ray analysis. Please try again.",
-                "class_colors": CLASS_COLORS,
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
-        )
-
-    # Stage 8: Template rendering & response dispatch
-    t_render_start = time.perf_counter()
-    response = templates.TemplateResponse(
-        request=request,
-        name="analyze.html",
-        context={
-            "active_page": "analyze",
-            "models_loaded": models_loaded,
-            "model_error": model_error_msg,
-            "results": results,
-            "upload_error": None,
-            "class_colors": CLASS_COLORS,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-    t_total = time.perf_counter() - t_req_start
-    logger.info(
-        "Stage 8/8: Template rendered in %.3fs. Request completed in %.3fs total.",
-        time.perf_counter() - t_render_start, t_total
-    )
-    return response
+            detail="An internal error occurred during X-ray analysis. Please try again."
+        ) from exc
 
 
-@app.get("/compare", response_class=HTMLResponse)
-async def route_compare_get(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="compare.html",
-        context={
-            "active_page": "compare",
-            "models_loaded": models_loaded,
-            "model_error": model_error_msg,
-            "comparison": None,
-            "upload_error": None,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.post("/compare", response_class=HTMLResponse)
-async def route_compare_post(
-    request: Request,
+@app.post("/api/compare")
+async def route_compare(
     file1: UploadFile = File(None),
     file2: UploadFile = File(None),
     use_demo1: str = Form(None),
     use_demo2: str = Form(None),
-    run_comparison: str = Form(None)
 ):
-    logger.info("Request received - POST /compare")
+    """
+    Accepts two X-rays (uploaded or demo), runs analysis on each, and returns
+    quantitative comparison metrics as JSON.
+    """
+    logger.info("POST /api/compare received")
 
     if not models_loaded:
-        return templates.TemplateResponse(
-            request=request,
-            name="compare.html",
+        raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            context={
-                "active_page": "compare",
-                "models_loaded": False,
-                "model_error": model_error_msg,
-                "comparison": None,
-                "upload_error": "Deep learning models are currently unavailable.",
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
+            detail="Deep learning models are currently unavailable."
         )
 
     sample_dir = os.path.join(base_dir, "assets", "samples")
     img1_np, img2_np = None, None
-    upload_error = None
 
-    try:
-        # Load Image 1
-        if use_demo1:
-            s_path = os.path.join(sample_dir, "sample_xray_1.png")
-            if os.path.exists(s_path):
-                img1_np = load_and_preprocess_pil_image(s_path)
-        elif file1 is not None and file1.filename:
-            img1_np = await read_and_validate_upload(file1)
+    # --- Load Image 1 ---
+    if use_demo1:
+        s_path = os.path.join(sample_dir, "sample_xray_1.png")
+        if os.path.exists(s_path):
+            img1_np = load_and_preprocess_pil_image(s_path)
+        else:
+            raise HTTPException(status_code=404, detail="Demo Sample 1 not found on server.")
+    elif file1 is not None and file1.filename:
+        img1_np = await read_and_validate_upload(file1)
 
-        # Load Image 2
-        if use_demo2:
-            s_path = os.path.join(sample_dir, "sample_xray_2.png")
-            if os.path.exists(s_path):
-                img2_np = load_and_preprocess_pil_image(s_path)
-        elif file2 is not None and file2.filename:
-            img2_np = await read_and_validate_upload(file2)
+    # --- Load Image 2 ---
+    if use_demo2:
+        s_path = os.path.join(sample_dir, "sample_xray_2.png")
+        if os.path.exists(s_path):
+            img2_np = load_and_preprocess_pil_image(s_path)
+        else:
+            raise HTTPException(status_code=404, detail="Demo Sample 2 not found on server.")
+    elif file2 is not None and file2.filename:
+        img2_np = await read_and_validate_upload(file2)
 
-        # Fallback to demo images if run_comparison requested without explicit images
-        if run_comparison:
-            if img1_np is None:
-                s_path1 = os.path.join(sample_dir, "sample_xray_1.png")
-                if os.path.exists(s_path1):
-                    img1_np = load_and_preprocess_pil_image(s_path1)
-            if img2_np is None:
-                s_path2 = os.path.join(sample_dir, "sample_xray_2.png")
-                if os.path.exists(s_path2):
-                    img2_np = load_and_preprocess_pil_image(s_path2)
-
-        if img1_np is None or img2_np is None:
-            upload_error = "Please provide or select both Image 1 and Image 2 to run comparison."
-
-    except HTTPException as he:
-        upload_error = he.detail
-    except Exception as exc:
-        upload_error = f"Error processing images for comparison: {str(exc)}"
-        logger.exception("Error in comparison upload handling: %s", str(exc))
-
-    if upload_error or img1_np is None or img2_np is None:
-        return templates.TemplateResponse(
-            request=request,
-            name="compare.html",
+    if img1_np is None or img2_np is None:
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            context={
-                "active_page": "compare",
-                "models_loaded": models_loaded,
-                "model_error": model_error_msg,
-                "comparison": None,
-                "upload_error": upload_error,
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
+            detail="Please provide or select both Image 1 and Image 2 to run comparison."
         )
 
-    # Execute both analyses under lock via threadpool
     try:
         async with inference_lock:
             res1 = await run_in_threadpool(analyze_single_xray, img1_np)
@@ -535,108 +391,108 @@ async def route_compare_post(
             p1 = cmp_res["image_1"]["probabilities"][cls] * 100
             p2 = cmp_res["image_2"]["probabilities"][cls] * 100
             d = diffs["class_probability_deltas"][cls] * 100
-            delta_table.append({"cls": cls, "p1": p1, "p2": p2, "d": d})
+            delta_table.append({"cls": cls, "p1": round(p1, 2), "p2": round(p2, 2), "d": round(d, 2)})
 
-        return templates.TemplateResponse(
-            request=request,
-            name="compare.html",
-            context={
-                "active_page": "compare",
-                "models_loaded": models_loaded,
-                "model_error": model_error_msg,
-                "img1_b64": image_to_base64(img1_np),
-                "img2_b64": image_to_base64(img2_np),
-                "res1": res1,
-                "res2": res2,
-                "comparison": cmp_res,
-                "diffs": diffs,
-                "delta_table": delta_table,
-                "res1_gcam_overlay_b64": image_to_base64(res1["gradcam"]["overlay"]),
-                "res1_mask_b64": image_to_base64(res1["segmentation"]["mask_binary"]),
-                "res2_gcam_overlay_b64": image_to_base64(res2["gradcam"]["overlay"]),
-                "res2_mask_b64": image_to_base64(res2["segmentation"]["mask_binary"]),
-                "upload_error": None,
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
-        )
+        result = {
+            "image_1": {
+                **cmp_res["image_1"],
+                "images": {
+                    "raw": image_to_base64(img1_np),
+                    "gcam_overlay": image_to_base64(res1["gradcam"]["overlay"]),
+                    "mask": image_to_base64(res1["segmentation"]["mask_binary"]),
+                    "seg_overlay": image_to_base64(res1["segmentation"]["overlay"]),
+                }
+            },
+            "image_2": {
+                **cmp_res["image_2"],
+                "images": {
+                    "raw": image_to_base64(img2_np),
+                    "gcam_overlay": image_to_base64(res2["gradcam"]["overlay"]),
+                    "mask": image_to_base64(res2["segmentation"]["mask_binary"]),
+                    "seg_overlay": image_to_base64(res2["segmentation"]["overlay"]),
+                }
+            },
+            "measurable_differences": diffs,
+            "delta_table": delta_table,
+            "disclaimer": COMPARISON_DISCLAIMER,
+            "medical_disclaimer": MEDICAL_DISCLAIMER,
+            "class_colors": CLASS_COLORS,
+        }
+        return JSONResponse(content=result)
+
     except Exception as exc:
         logger.exception("Comparison analysis failure: %s", str(exc))
-        return templates.TemplateResponse(
-            request=request,
-            name="compare.html",
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            context={
-                "active_page": "compare",
-                "models_loaded": models_loaded,
-                "model_error": model_error_msg,
-                "comparison": None,
-                "upload_error": "An internal error occurred during comparative analysis. Please try again.",
-                "medical_disclaimer": MEDICAL_DISCLAIMER
-            }
+            detail="An internal error occurred during comparative analysis. Please try again."
+        ) from exc
+
+
+@app.get("/api/export/{fmt}")
+async def route_export_report(fmt: str):
+    """Export latest analysis as 'txt' or 'json'."""
+    if "latest" not in cache_report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No recent analysis available to export."
+        )
+
+    analysis_res = cache_report["latest"]
+    ts = analysis_res["timestamp"].replace(":", "")
+
+    if fmt == "txt":
+        content = generate_text_report(analysis_res)
+        filename = f"chestvision_report_{ts}.txt"
+        return Response(
+            content=content,
+            media_type="text/plain",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    elif fmt == "json":
+        content = generate_json_report(analysis_res)
+        filename = f"chestvision_data_{ts}.json"
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid export format. Choose 'txt' or 'json'."
         )
 
 
-@app.get("/explainability", response_class=HTMLResponse)
-async def route_explainability(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="explainability.html",
-        context={
-            "active_page": "explainability",
-            "models_loaded": models_loaded,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.get("/model-info", response_class=HTMLResponse)
-async def route_model_info(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="model_info.html",
-        context={
-            "active_page": "model_info",
-            "models_loaded": models_loaded,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.get("/about", response_class=HTMLResponse)
-async def route_about(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="about.html",
-        context={
-            "active_page": "about",
-            "models_loaded": models_loaded,
-            "medical_disclaimer": MEDICAL_DISCLAIMER
-        }
-    )
-
-
-@app.get("/export/{fmt}")
-async def route_export_report(fmt: str):
-    if "latest" not in cache_report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No recent analysis available to export.")
-
-    analysis_res = cache_report["latest"]
-    if fmt == "txt":
-        content = generate_text_report(analysis_res)
-        filename = f"chestvision_report_{analysis_res['timestamp'].replace(':','')}.txt"
-        return Response(content=content, media_type="text/plain", headers={"Content-Disposition": f"attachment; filename={filename}"})
-    elif fmt == "json":
-        content = generate_json_report(analysis_res)
-        filename = f"chestvision_data_{analysis_res['timestamp'].replace(':','')}.json"
-        return Response(content=content, media_type="application/json", headers={"Content-Disposition": f"attachment; filename={filename}"})
-    else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid export format. Choose 'txt' or 'json'.")
+@app.get("/api/info")
+async def route_info():
+    """Returns static info about the model architecture and class definitions."""
+    return {
+        "app_name": "ChestVision AI",
+        "version": "2.0",
+        "models": {
+            "classifier": {
+                "architecture": "DenseNet121",
+                "task": "Multi-class chest X-ray classification",
+                "classes": CLASS_NAMES,
+                "input_size": f"{IMG_SIZE}x{IMG_SIZE}",
+                "training": "Two-stage fine-tuning on COVID-19 Radiography Dataset",
+            },
+            "segmenter": {
+                "architecture": "U-Net",
+                "task": "Lung field segmentation",
+                "input_size": f"{IMG_SIZE}x{IMG_SIZE}",
+            },
+        },
+        "class_colors": CLASS_COLORS,
+        "medical_disclaimer": MEDICAL_DISCLAIMER,
+        "models_loaded": models_loaded,
+    }
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 8000))
     logger.info("Starting Uvicorn server on 0.0.0.0:%d", port)
 
     uvicorn.run(

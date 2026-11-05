@@ -14,10 +14,17 @@ venv/
 scratch/
 *.log
 
-# Exclude notebooks and training split csvs to keep Docker build context slim
+# Exclude notebooks and training artifacts
 *.ipynb
 artifacts/*.csv
 artifacts/*.png
 artifacts/*.json
 artifacts/classifier_stage1_best.keras
 tests/
+
+# Frontend dev artifacts (not needed in backend image)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Keep models/ — mounted as volume at runtime

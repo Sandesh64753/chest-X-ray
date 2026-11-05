@@ -19,3 +19,8 @@ env/
 # Temporary files
 scratch/
 *.log
+
+# Frontend build & dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

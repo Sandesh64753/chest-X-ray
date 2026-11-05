@@ -1,20 +1,52 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  chestvision-web:
+  # ── FastAPI Backend ──────────────────────────────────────────────
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: chestvision_ai
-    ports:
-      - "8000:8000"
+      dockerfile: backend.Dockerfile
+    container_name: chestvision_backend
     restart: unless-stopped
     environment:
       - PORT=8000
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./models:/app/models
+      # Mount models at runtime — avoids baking large .keras files into image
+      - ./models:/app/models:ro
+    expose:
+      - "8000"
+    networks:
+      - chestvision_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
+      start_period: 60s
       retries: 3
+
+  # ── React Frontend (nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: chestvision_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - chestvision_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+networks:
+  chestvision_net:
+    driver: bridge
