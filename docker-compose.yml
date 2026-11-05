@@ -5,7 +5,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend.Dockerfile
+      dockerfile: Dockerfile
     container_name: chestvision_backend
     restart: unless-stopped
     environment:
